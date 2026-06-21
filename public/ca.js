@@ -80,7 +80,8 @@ const PREFIX = `
         ch += 0.5;
         float tx = floor(mod(ch, tensor.gridSize.x));
         float ty = floor(ch / tensor.gridSize.x);
-        vec2 p = fract(pos/tensor.size) + vec2(tx, ty);
+        vec2 cell = mod(floor(pos), tensor.size) + 0.5;
+        vec2 p = cell / tensor.size + vec2(tx, ty);
         p /= tensor.gridSize;
         return p;
     }
@@ -234,6 +235,7 @@ const PROGRAMS = {
     uniform float u_seed, u_fuzz;
     uniform vec2 u_weightCoefs; // scale, center
     uniform vec2 u_layout;
+    uniform float u_applyRelu;
     
     const float MAX_PACKED_DEPTH = 32.0;
     
@@ -272,6 +274,9 @@ const PROGRAMS = {
           }
       }
       result += readWeightUnscaled(p);  // bias
+      if (u_applyRelu > 0.5) {
+          result = max(result, vec4(0.0));
+      }
       setOutput(result*u_weightCoefs.x);
     }`,
     update: `
@@ -426,7 +431,7 @@ function createTensor(gl, w, h, depth, packScaleZero) {
     const tex = fbi.attachments[0];
     return {
         _type: 'tensor',
-        fbi, w, h, depth, gridW, gridH, depth4, tex, packScaleZero
+        fbi, w, h, depth, gridW, gridH, depth4, tex, texW, texH, packScaleZero
     };
 }
 
@@ -682,6 +687,562 @@ export class CA {
             uniforms.u_raw = 1.0;
         }
         setTensorUniforms(uniforms, 'u_input', inputBuf);
+        twgl.setUniforms(this.progs.vis, uniforms);
+        twgl.drawBufferInfo(gl, this.quad);
+    }
+}
+
+function createProgramSet(gl, programs, defines) {
+    defines = defines || '';
+    const result = {};
+    for (const name in programs) {
+        const fsCode = defines + PREFIX + programs[name];
+        const progInfo = twgl.createProgramInfo(gl, [vs_code, fsCode]);
+        progInfo.name = name;
+        result[name] = progInfo;
+    }
+    return result;
+}
+
+function clampByte(v) {
+    return Math.max(0, Math.min(255, Math.round(v)));
+}
+
+function normalizeBits(bits, count) {
+    const normalized = new Array(count).fill(0);
+    if (!Array.isArray(bits)) {
+        return normalized;
+    }
+    for (let i = 0; i < Math.min(bits.length, count); ++i) {
+        normalized[i] = bits[i] ? 1 : 0;
+    }
+    return normalized;
+}
+
+function encodeValue(value, scale, zero) {
+    return clampByte((value / scale + zero) * 255.0);
+}
+
+function buildDenseLayerTexture(gl, layer) {
+    const weights = layer.weights || [];
+    const bias = layer.bias || [];
+    const outChannels = layer.out_channels || weights.length;
+    const inChannels = layer.in_channels || (weights[0] ? weights[0].length : 0);
+    const outDepth4 = Math.ceil(outChannels / 4);
+    const texWidth = outDepth4;
+    const texHeight = inChannels + 1;
+    const maxAbs = Math.max(
+        1e-6,
+        ...weights.flat().map(v => Math.abs(v)),
+        ...bias.map(v => Math.abs(v))
+    );
+    const scale = layer.weight_scale || (maxAbs * 2.0);
+    const zero = 127.0 / 255.0;
+    const texData = new Uint8Array(texWidth * texHeight * 4);
+    const writeTexel = (x, y, rgba) => {
+        const idx = (y * texWidth + x) * 4;
+        texData[idx + 0] = encodeValue(rgba[0], scale, zero);
+        texData[idx + 1] = encodeValue(rgba[1], scale, zero);
+        texData[idx + 2] = encodeValue(rgba[2], scale, zero);
+        texData[idx + 3] = encodeValue(rgba[3], scale, zero);
+    };
+
+    for (let inputIdx = 0; inputIdx < inChannels; ++inputIdx) {
+        for (let pack = 0; pack < outDepth4; ++pack) {
+            const rgba = [0, 0, 0, 0];
+            for (let component = 0; component < 4; ++component) {
+                const outIdx = pack * 4 + component;
+                if (outIdx < outChannels) {
+                    rgba[component] = weights[outIdx][inputIdx] || 0.0;
+                }
+            }
+            writeTexel(pack, inputIdx, rgba);
+        }
+    }
+
+    for (let pack = 0; pack < outDepth4; ++pack) {
+        const rgba = [0, 0, 0, 0];
+        for (let component = 0; component < 4; ++component) {
+            const outIdx = pack * 4 + component;
+            if (outIdx < outChannels) {
+                rgba[component] = bias[outIdx] || 0.0;
+            }
+        }
+        writeTexel(pack, inChannels, rgba);
+    }
+
+    return {
+        tex: twgl.createTexture(gl, {
+            minMag: gl.NEAREST,
+            width: texWidth,
+            height: texHeight,
+            src: texData,
+            format: gl.RGBA,
+            internalFormat: gl.RGBA,
+            type: gl.UNSIGNED_BYTE,
+            flipY: false,
+            premultiplyAlpha: false,
+        }),
+        coefs: [scale, zero],
+        in_n: inChannels,
+        out_n: outChannels,
+        layout: [1, 1],
+        activation: layer.activation || null,
+        quantScaleZero: [
+            layer.output_scale || layer.quant_scale || 16.0,
+            zero,
+        ],
+        ready: true,
+    };
+}
+
+function setTextureBytes(gl, tensor, bytes) {
+    gl.bindTexture(gl.TEXTURE_2D, tensor.tex);
+    gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        tensor.texW,
+        tensor.texH,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        bytes
+    );
+}
+
+const GENOMIC_PROGRAMS = {
+    perception: `
+    const mat3 ident = mat3(
+        0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0
+    );
+    const mat3 sobelX = mat3(
+        -1.0, 0.0, 1.0,
+        -2.0, 0.0, 2.0,
+        -1.0, 0.0, 1.0
+    );
+    const mat3 sobelY = mat3(
+        -1.0, -2.0, -1.0,
+         0.0,  0.0,  0.0,
+         1.0,  2.0,  1.0
+    );
+    const mat3 lap = mat3(
+         1.0,  2.0,  1.0,
+         2.0, -12.0, 2.0,
+         1.0,  2.0,  1.0
+    );
+
+    vec4 conv3x3(vec2 xy, float inputCh, mat3 filter) {
+        vec4 a = vec4(0.0);
+        for (int y=0; y<3; ++y)
+        for (int x=0; x<3; ++x) {
+          vec2 p = xy+vec2(float(x-1), float(y-1));
+          a += filter[y][x] * u_input_read(p, inputCh);
+        }
+        return a;
+    }
+
+    void main() {
+        vec2 xy = getOutputXY();
+        float ch = getOutputChannel();
+        if (ch >= u_output.depth4)
+            return;
+
+        float filterBand = floor((ch + 0.5) / u_input.depth4);
+        float inputCh = ch - filterBand * u_input.depth4;
+        if (filterBand < 0.5) {
+            setOutput(conv3x3(xy, inputCh, ident));
+        } else if (filterBand < 1.5) {
+            setOutput(conv3x3(xy, inputCh, sobelX));
+        } else if (filterBand < 2.5) {
+            setOutput(conv3x3(xy, inputCh, sobelY));
+        } else {
+            setOutput(conv3x3(xy, inputCh, lap));
+        }
+    }`,
+    dense: PROGRAMS.dense,
+    vis: `
+    uniform float u_raw;
+    uniform float u_zoom;
+    varying vec2 uv;
+
+    void main() {
+        vec2 xy = vec2(uv.x, 1.0 - uv.y);
+        if (u_raw > 0.5) {
+            gl_FragColor = texture2D(u_input_tex, xy);
+            gl_FragColor.a = 1.0;
+            return;
+        }
+
+        xy = (xy + vec2(0.5) * (u_zoom - 1.0)) / u_zoom;
+        xy *= u_input.size;
+        vec3 rgb = u_input_read(xy, 0.0).rgb + vec3(0.5);
+        gl_FragColor = vec4(clamp(rgb, 0.0, 1.0), 1.0);
+    }`,
+    update: `
+    ${defInput('u_update')}
+    uniform float u_seed, u_updateProbability;
+
+    varying vec2 uv;
+
+    void main() {
+      vec2 xy = getOutputXY();
+      float ch = getOutputChannel();
+      vec4 state = u_input_read(xy, ch);
+      vec4 delta = vec4(0.0);
+      if (hash13(vec3(xy, u_seed)) <= u_updateProbability) {
+          delta = u_update_readUV(uv);
+      }
+
+      setOutput(state + delta);
+    }`,
+    brush: `
+    uniform vec2 u_pos;
+    uniform float u_r;
+    uniform float u_resetState;
+    uniform float u_writeGenome;
+    uniform float u_clearGenome;
+    uniform float u_noiseAmount;
+    uniform float u_randomizeAll;
+    uniform float u_genomeStart, u_genomeEnd;
+    uniform vec4 u_genomeBits0, u_genomeBits1;
+
+    float getGenomeBit(float idx) {
+        if (idx < 0.5) return u_genomeBits0.x;
+        if (idx < 1.5) return u_genomeBits0.y;
+        if (idx < 2.5) return u_genomeBits0.z;
+        if (idx < 3.5) return u_genomeBits0.w;
+        if (idx < 4.5) return u_genomeBits1.x;
+        if (idx < 5.5) return u_genomeBits1.y;
+        if (idx < 6.5) return u_genomeBits1.z;
+        return u_genomeBits1.w;
+    }
+
+    bool insideBrush(vec2 sampleXY) {
+        vec2 diff = abs(sampleXY - u_pos);
+        diff = min(diff, u_output.size - diff);
+        return length(diff) < u_r;
+    }
+
+    void main() {
+        vec2 xy = getOutputXY();
+        float ch = getOutputChannel();
+        vec4 state = u_input_read(xy, ch);
+
+        if (!insideBrush(xy)) {
+            setOutput(state);
+            return;
+        }
+
+        vec4 outState = state;
+        float base = ch * 4.0;
+
+        for (int i = 0; i < 4; ++i) {
+            float idx = base + float(i);
+            bool isGenome = idx >= u_genomeStart && idx < u_genomeEnd;
+            float value = i == 0 ? outState.x : (i == 1 ? outState.y : (i == 2 ? outState.z : outState.w));
+
+            if (u_randomizeAll > 0.5) {
+                value = (hash13(vec3(xy, idx + 17.0)) - 0.5) * u_noiseAmount;
+            } else if (isGenome) {
+                if (u_clearGenome > 0.5) {
+                    value = 0.0;
+                }
+                if (u_writeGenome > 0.5) {
+                    value = getGenomeBit(idx - u_genomeStart);
+                }
+            } else {
+                if (u_resetState > 0.5) {
+                    value = 0.0;
+                }
+                if (u_noiseAmount > 0.0) {
+                    value += (hash13(vec3(xy, idx + 17.0)) - 0.5) * u_noiseAmount;
+                }
+            }
+
+            if (i == 0) outState.x = value;
+            else if (i == 1) outState.y = value;
+            else if (i == 2) outState.z = value;
+            else outState.w = value;
+        }
+
+        setOutput(outState);
+    }`,
+};
+
+export class GenomicCA {
+    constructor(gl, options = {}) {
+        this.gl = gl;
+        this.gridSize = options.gridSize || [128, 128];
+        this.updateProbability = options.updateProbability || 0.5;
+        this.rotationAngle = 0.0;
+        this.alignment = 0.0;
+        this.fuzz = 0.0;
+        this.visMode = 'color';
+        this.hexGrid = false;
+        this.layers = [];
+        this.model = null;
+        this.genomeChannels = 0;
+        this.stateChannels = 0;
+        this.hiddenChannels = 0;
+        this.stateQuantizationScale = 4.0;
+        this.perceptionQuantizationScale = 16.0;
+        this.hiddenQuantizationScale = 16.0;
+
+        this.progs = createProgramSet(gl, GENOMIC_PROGRAMS);
+        this.quad = twgl.createBufferInfoFromArrays(gl, {
+            position: [-1, -1, 0, 1, -1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 1, 1, 0],
+        });
+    }
+
+    setGridSize(gridSize) {
+        this.gridSize = gridSize;
+        if (this.model) {
+            this.setupBuffers();
+            this.clearAll();
+        }
+    }
+
+    loadModel(model) {
+        const gl = this.gl;
+        this.model = model;
+        this.stateChannels = model.state_channels;
+        this.genomeChannels = model.genome_channels || 0;
+        this.hiddenChannels = model.hidden_channels || Math.max(0, this.stateChannels - this.genomeChannels - 3);
+        this.stateQuantizationScale = model.state_quantization_scale || 4.0;
+        this.perceptionQuantizationScale = model.perception_quantization_scale || Math.max(this.stateQuantizationScale * 2.0, 8.0);
+        this.hiddenQuantizationScale = model.hidden_quantization_scale || Math.max(this.stateQuantizationScale * 2.0, 8.0);
+        this.updateProbability = model.update_probability || this.updateProbability;
+        this.layers.forEach(layer => gl.deleteTexture(layer.tex));
+        this.layers = (model.layers || []).map(layer => buildDenseLayerTexture(gl, layer));
+        this.setupBuffers();
+        this.clearAll();
+    }
+
+    setupBuffers() {
+        const gl = this.gl;
+        const [gridW, gridH] = this.gridSize;
+        const zero = 127.0 / 255.0;
+        const perceptionChannels = this.layers[0].in_n;
+        const lastLayer = this.layers[this.layers.length - 1];
+
+        this.buf = {
+            control: createTensor(gl, gridW, gridH, 4, [255.0, 0.0]),
+            state: createTensor(gl, gridW, gridH, this.stateChannels, [this.stateQuantizationScale, zero]),
+            newState: createTensor(gl, gridW, gridH, this.stateChannels, [this.stateQuantizationScale, zero]),
+            perception: createTensor(gl, gridW, gridH, perceptionChannels, [this.perceptionQuantizationScale, zero]),
+        };
+
+        this.layers.forEach((layer, idx) => {
+            this.buf[`layer${idx}`] = createTensor(
+                gl,
+                gridW,
+                gridH,
+                layer.out_n,
+                [idx === this.layers.length - 1 ? this.stateQuantizationScale : this.hiddenQuantizationScale, zero]
+            );
+        });
+
+        this.zeroControl();
+    }
+
+    zeroControl() {
+        if (!this.buf || !this.buf.control) {
+            return;
+        }
+        const zeroBytes = new Uint8Array(this.buf.control.texW * this.buf.control.texH * 4);
+        setTextureBytes(this.gl, this.buf.control, zeroBytes);
+    }
+
+    clearAll() {
+        if (!this.buf || !this.buf.state) {
+            return;
+        }
+        const state = this.createPackedStateBytes();
+        setTextureBytes(this.gl, this.buf.state, state);
+        setTextureBytes(this.gl, this.buf.newState, state);
+    }
+
+    createPackedStateBytes(genomeMap) {
+        const tensor = this.buf.state;
+        const bytes = new Uint8Array(tensor.texW * tensor.texH * 4);
+        const zero = tensor.packScaleZero[1];
+        const scale = tensor.packScaleZero[0];
+        const defaultByte = encodeValue(0.0, scale, zero);
+        bytes.fill(defaultByte);
+
+        if (!genomeMap) {
+            return bytes;
+        }
+
+        const genomeStart = this.stateChannels - this.genomeChannels;
+        for (let y = 0; y < tensor.h; ++y) {
+            for (let x = 0; x < tensor.w; ++x) {
+                const cell = genomeMap[y * tensor.w + x] || [];
+                for (let g = 0; g < this.genomeChannels; ++g) {
+                    const absChannel = genomeStart + g;
+                    const pack = Math.floor(absChannel / 4);
+                    const component = absChannel % 4;
+                    const tx = (pack % tensor.gridW) * tensor.w + x;
+                    const ty = Math.floor(pack / tensor.gridW) * tensor.h + y;
+                    const idx = (ty * tensor.texW + tx) * 4 + component;
+                    const genomeValue = Math.max(0.0, Math.min(1.0, Number(cell[g] ?? 0.0)));
+                    bytes[idx] = encodeValue(genomeValue, scale, zero);
+                }
+            }
+        }
+        return bytes;
+    }
+
+    seedGenomeMap(genomeMap) {
+        const bytes = this.createPackedStateBytes(genomeMap);
+        setTextureBytes(this.gl, this.buf.state, bytes);
+        setTextureBytes(this.gl, this.buf.newState, bytes);
+    }
+
+    fillGenome(bits) {
+        const normalized = normalizeBits(bits, this.genomeChannels);
+        const [w, h] = this.gridSize;
+        const genomeMap = new Array(w * h).fill(null).map(() => normalized.slice());
+        this.seedGenomeMap(genomeMap);
+    }
+
+    step(count = 1) {
+        if (!this.model || !this.layers.every(layer => layer.ready)) {
+            return;
+        }
+        for (let stepIdx = 0; stepIdx < count; ++stepIdx) {
+            this.runLayer(this.progs.perception, this.buf.perception, {
+                u_input: this.buf.state,
+                u_angle: 0.0,
+                u_alignment: 0.0,
+                u_hexGrid: 0.0,
+            });
+
+            let inputBuf = this.buf.perception;
+            for (let i = 0; i < this.layers.length; ++i) {
+                this.runDense(this.buf[`layer${i}`], inputBuf, this.layers[i]);
+                inputBuf = this.buf[`layer${i}`];
+            }
+
+            this.runLayer(this.progs.update, this.buf.newState, {
+                u_input: this.buf.state,
+                u_update: inputBuf,
+                u_seed: Math.random() * 1000,
+                u_updateProbability: this.updateProbability,
+            });
+            [this.buf.state, this.buf.newState] = [this.buf.newState, this.buf.state];
+        }
+    }
+
+    applyBrush({ x, y, radius, genomeBits, resetState = false, writeGenome = false, clearGenome = false, noiseAmount = 0.0, randomizeAll = false }) {
+        const bits = normalizeBits(genomeBits, this.genomeChannels);
+        this.runLayer(this.progs.brush, this.buf.newState, {
+            u_input: this.buf.state,
+            u_pos: [x, y],
+            u_r: radius,
+            u_resetState: resetState ? 1.0 : 0.0,
+            u_writeGenome: writeGenome ? 1.0 : 0.0,
+            u_clearGenome: clearGenome ? 1.0 : 0.0,
+            u_noiseAmount: noiseAmount,
+            u_randomizeAll: randomizeAll ? 1.0 : 0.0,
+            u_genomeStart: this.stateChannels - this.genomeChannels,
+            u_genomeEnd: this.stateChannels,
+            u_genomeBits0: [bits[0] || 0, bits[1] || 0, bits[2] || 0, bits[3] || 0],
+            u_genomeBits1: [bits[4] || 0, bits[5] || 0, bits[6] || 0, bits[7] || 0],
+        });
+        [this.buf.state, this.buf.newState] = [this.buf.newState, this.buf.state];
+    }
+
+    damageCircle(x, y, radius) {
+        this.applyBrush({
+            x,
+            y,
+            radius,
+            noiseAmount: this.stateQuantizationScale,
+            randomizeAll: true,
+        });
+    }
+
+    paintGenome(x, y, radius, genomeBits, mode = 'paint-only') {
+        const options = {
+            x,
+            y,
+            radius,
+            genomeBits,
+            writeGenome: true,
+            resetState: mode === 'paint-reset',
+            noiseAmount: 0.0,
+        };
+        this.applyBrush(options);
+    }
+
+    eraseCircle(x, y, radius) {
+        this.applyBrush({
+            x,
+            y,
+            radius,
+            resetState: true,
+            clearGenome: true,
+        });
+    }
+
+    randomDamage(count = 4, radiusMin = 10, radiusMax = 24) {
+        const [w, h] = this.gridSize;
+        for (let i = 0; i < count; ++i) {
+            const radius = radiusMin + Math.random() * (radiusMax - radiusMin);
+            this.damageCircle(Math.random() * w, Math.random() * h, radius);
+        }
+    }
+
+    runLayer(program, output, inputs) {
+        const gl = this.gl;
+        const uniforms = {};
+        for (const name in inputs) {
+            const value = inputs[name];
+            if (value && value._type === 'tensor') {
+                setTensorUniforms(uniforms, name, value);
+            } else {
+                uniforms[name] = value;
+            }
+        }
+        setTensorUniforms(uniforms, 'u_output', output);
+        twgl.bindFramebufferInfo(gl, output.fbi);
+        gl.useProgram(program.program);
+        twgl.setBuffersAndAttributes(gl, program, this.quad);
+        twgl.setUniforms(program, uniforms);
+        twgl.drawBufferInfo(gl, this.quad);
+    }
+
+    runDense(output, input, layer) {
+        return this.runLayer(this.progs.dense, output, {
+            u_input: input,
+            u_control: this.buf.control,
+            u_weightTex: layer.tex,
+            u_weightCoefs: layer.coefs,
+            u_layout: layer.layout,
+            u_applyRelu: layer.activation === 'relu' ? 1.0 : 0.0,
+            u_seed: 0.0,
+            u_fuzz: 0.0,
+        });
+    }
+
+    draw(zoom = 1.0) {
+        const gl = this.gl;
+        gl.useProgram(this.progs.vis.program);
+        twgl.setBuffersAndAttributes(gl, this.progs.vis, this.quad);
+        const uniforms = {
+            u_raw: 0.0,
+            u_zoom: zoom,
+            u_angle: 0.0,
+            u_alignment: 0.0,
+            u_perceptionCircle: 0.0,
+            u_arrows: 0.0,
+            u_hexGrid: 0.0,
+        };
+        setTensorUniforms(uniforms, 'u_input', this.buf.state);
         twgl.setUniforms(this.progs.vis, uniforms);
         twgl.drawBufferInfo(gl, this.quad);
     }

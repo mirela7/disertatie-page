@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multi-Texture Neural Cellular Automata</title>
+  <link rel="stylesheet" href="./genomic-demo.css">
+  <script src="./twgl.min.js"></script>
+</head>
+<body>
+  <main class="app-shell" id="app">
+    <header class="app-header">
+      <span class="eyebrow">Genomic NCA Browser Demo</span>
+      <h1>Multi-Texture Neural Cellular Automata</h1>
+      <p>This browser app reuses the repo's WebGL NCA pipeline, but adds genome-aware editing so trained PyTorch texture NCAs can run locally with no Python backend at inference time.</p>
+    </header>
+
+    <section class="layout">
+      <aside class="panel panel-left">
+        <section class="section">
+          <h2>Genome Palette</h2>
+          <div class="genome-grid" id="genome-list"></div>
+        </section>
+
+        <section class="section">
+          <h2>Sketch Interpolation</h2>
+          <div class="control-grid">
+            <label class="toggle">
+              <input type="checkbox" id="interp-enabled">
+              Paint interpolated genomes in sketch mode
+            </label>
+            <div class="field">
+              <label for="interp-first">First genome</label>
+              <select id="interp-first"></select>
+            </div>
+            <div class="field">
+              <label for="interp-alpha">Alpha <span id="interp-alpha-value">0.50</span></label>
+              <input type="range" min="0" max="100" step="1" value="50" id="interp-alpha">
+            </div>
+            <div class="field">
+              <label for="interp-second">Second genome</label>
+              <select id="interp-second"></select>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Brush</h2>
+          <div class="control-grid">
+            <div class="field">
+              <label for="brush-radius">Radius <span id="brush-radius-value">14 px</span></label>
+              <input type="range" min="2" max="48" step="1" value="14" id="brush-radius">
+            </div>
+            <div class="field">
+              <label for="speed-slider">Speed <span id="speed-value">1x</span></label>
+              <input type="range" min="0" max="8" step="1" value="4" id="speed-slider">
+            </div>
+            <div class="field">
+              <label for="grid-size">Simulation resolution</label>
+              <select id="grid-size">
+                <option value="128">128 × 128</option>
+                <option value="256">256 × 256</option>
+              </select>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="sketch-mode">
+              Sketch initialization mode
+            </label>
+          </div>
+        </section>
+      </aside>
+
+      <div class="center-column">
+        <div class="stage">
+          <div class="step-banner" id="step-counter">Step 0</div>
+          <div class="canvas-wrap">
+            <canvas id="gl-canvas" width="1024" height="1024"></canvas>
+            <canvas id="sketch-canvas" width="1024" height="1024"></canvas>
+          </div>
+          <div class="stage-bar">
+            <div class="button-row">
+              <button class="primary" id="start-btn">Start</button>
+              <button id="pause-btn">Pause</button>
+              <button id="reset-btn">Reset</button>
+              <button id="clear-btn">Clear</button>
+              <button id="random-damage-btn">Random Damage</button>
+            </div>
+            <div class="status" id="status-text">Loading model registry...</div>
+          </div>
+        </div>
+
+        <aside class="panel panel-middle">
+          <section class="section">
+            <h2>Tools</h2>
+            <div class="mode-grid tools-grid" id="tool-list"></div>
+          </section>
+
+          <section class="section">
+            <h2>Genome Painting Mode</h2>
+            <div class="mode-grid" id="genome-mode-list"></div>
+          </section>
+
+          <section class="section">
+            <h2>Notes</h2>
+            <div class="note" id="model-note">Choose a target to load its model and default genome. In sketch mode, Start seeds the simulation from the painted genome map with RGB and hidden channels initialized to zero.</div>
+          </section>
+        </aside>
+      </div>
+
+      <aside class="panel panel-right">
+        <section class="section">
+          <h2>Models</h2>
+          <div class="card-grid" id="model-list"></div>
+        </section>
+
+        <section class="section">
+          <h2>Targets</h2>
+          <div class="card-grid target-grid" id="target-list"></div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module" src="./genomic-demo.js"></script>
+</body>
+</html>

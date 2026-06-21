@@ -1,0 +1,141 @@
+{
+  "models": [
+    {
+      "id": "dt4-10000",
+      "name": "G4Multi 10000",
+      "description": "4-genome-channel regeneration model exported from dt4-10000.pth",
+      "model_path": "./my_models/dt4-10000.json",
+      "state_channels": 20,
+      "genome_channels": 4,
+      "genome_presets": [
+        { "id": "genome-0000", "label": "Genome 0000", "bits": [0, 0, 0, 0], "color": "#f3c35d" },
+        { "id": "genome-0001", "label": "Genome 0001", "bits": [0, 0, 0, 1], "color": "#3a9f8f" },
+        { "id": "genome-0010", "label": "Genome 0010", "bits": [0, 0, 1, 0], "color": "#d96b4d" },
+        { "id": "genome-0011", "label": "Genome 0011", "bits": [0, 0, 1, 1], "color": "#6a67ce" },
+        { "id": "genome-0100", "label": "Genome 0100", "bits": [0, 1, 0, 0], "color": "#4d8be0" },
+        { "id": "genome-0101", "label": "Genome 0101", "bits": [0, 1, 0, 1], "color": "#9a5de0" },
+        { "id": "genome-0110", "label": "Genome 0110", "bits": [0, 1, 1, 0], "color": "#57b65f" },
+        { "id": "genome-0111", "label": "Genome 0111", "bits": [0, 1, 1, 1], "color": "#303030" },
+        { "id": "genome-1000", "label": "Genome 1000", "bits": [1, 0, 0, 0], "color": "#e08a4d" },
+        { "id": "genome-1001", "label": "Genome 1001", "bits": [1, 0, 0, 1], "color": "#2f7f6d" },
+        { "id": "genome-1010", "label": "Genome 1010", "bits": [1, 0, 1, 0], "color": "#c6485f" },
+        { "id": "genome-1011", "label": "Genome 1011", "bits": [1, 0, 1, 1], "color": "#7f6edb" },
+        { "id": "genome-1100", "label": "Genome 1100", "bits": [1, 1, 0, 0], "color": "#4fbad6" },
+        { "id": "genome-1101", "label": "Genome 1101", "bits": [1, 1, 0, 1], "color": "#b45cce" },
+        { "id": "genome-1110", "label": "Genome 1110", "bits": [1, 1, 1, 0], "color": "#82b440" },
+        { "id": "genome-1111", "label": "Genome 1111", "bits": [1, 1, 1, 1], "color": "#111111" }
+      ],
+      "targets": [
+        { "id": "genome-0000", "label": "Genome 0000", "genome": [0, 0, 0, 0], "image": "./my_targets/frilly_0061.jpg", "default": true },
+        { "id": "genome-0001", "label": "Genome 0001", "genome": [0, 0, 0, 1], "image": "./my_targets/bubbly_origin.jpg" },
+        { "id": "genome-0010", "label": "Genome 0010", "genome": [0, 0, 1, 0], "image": "./my_targets/stratified_0102_square.jpg" },
+        { "id": "genome-0011", "label": "Genome 0011", "genome": [0, 0, 1, 1], "image": "./my_targets/dotted.jpg" },
+        { "id": "genome-0100", "label": "Genome 0100", "genome": [0, 1, 0, 0], "image": "./my_targets/CMP_sprinkled.jpg" },
+        { "id": "genome-0101", "label": "Genome 0101", "genome": [0, 1, 0, 1], "image": "./my_targets/CMP_wood_floor.jpg" },
+        { "id": "genome-0110", "label": "Genome 0110", "genome": [0, 1, 1, 0], "image": "./my_targets/pitted_0160.jpg" },
+        { "id": "genome-0111", "label": "Genome 0111", "genome": [0, 1, 1, 1], "image": "./my_targets/fibrous_0193.jpg" },
+        { "id": "genome-1000", "label": "Genome 1000", "genome": [1, 0, 0, 0], "image": "./my_targets/interlaced_0195.jpg" },
+        { "id": "genome-1001", "label": "Genome 1001", "genome": [1, 0, 0, 1], "image": "./my_targets/striped_0008.jpg" },
+        { "id": "genome-1010", "label": "Genome 1010", "genome": [1, 0, 1, 0], "image": "./my_targets/veined_0185.jpg" },
+        { "id": "genome-1011", "label": "Genome 1011", "genome": [1, 0, 1, 1], "image": "./my_targets/bubbly_0117.jpg" },
+        { "id": "genome-1100", "label": "Genome 1100", "genome": [1, 1, 0, 0], "image": "./my_targets/spiralled_0112.jpg" },
+        { "id": "genome-1101", "label": "Genome 1101", "genome": [1, 1, 0, 1], "image": "./my_targets/crystalline_0198.jpg" },
+        { "id": "genome-1110", "label": "Genome 1110", "genome": [1, 1, 1, 0], "image": "./my_targets/crosshatched_0121.jpg" },
+        { "id": "genome-1111", "label": "Genome 1111", "genome": [1, 1, 1, 1], "image": "./my_targets/marbled_0193.jpg" }
+      ],
+      "notes": "Imported from dt4_details.json. The 16 targets are mapped in ascending genome order from 0000 to 1111."
+    },
+    {
+      "id": "dt3xs-10000",
+      "name": "DT3GenomeXSArchi 10000",
+      "description": "XS genomic texture NCA exported from dt3xs-10000.pth",
+      "model_path": "./my_models/dt3xs-10000.json",
+      "state_channels": 11,
+      "genome_channels": 3,
+      "genome_presets": [
+        { "id": "g000", "label": "Genome 000", "bits": [0, 0, 0], "color": "#f3c35d" },
+        { "id": "g001", "label": "Genome 001", "bits": [0, 0, 1], "color": "#3a9f8f" },
+        { "id": "g010", "label": "Genome 010", "bits": [0, 1, 0], "color": "#d96b4d" },
+        { "id": "g011", "label": "Genome 011", "bits": [0, 1, 1], "color": "#6a67ce" },
+        { "id": "g100", "label": "Genome 100", "bits": [1, 0, 0], "color": "#4d8be0" },
+        { "id": "g101", "label": "Genome 101", "bits": [1, 0, 1], "color": "#9a5de0" },
+        { "id": "g110", "label": "Genome 110", "bits": [1, 1, 0], "color": "#57b65f" },
+        { "id": "g111", "label": "Genome 111", "bits": [1, 1, 1], "color": "#303030" }
+      ],
+      "targets": [
+        { "id": "target-g000", "label": "Genome 000", "genome": [0, 0, 0], "image": "./my_targets/frilly_0061.jpg", "default": true },
+        { "id": "target-g001", "label": "Genome 001", "genome": [0, 0, 1], "image": "./my_targets/stratified_0102_square.jpg" },
+        { "id": "target-g010", "label": "Genome 010", "genome": [0, 1, 0], "image": "./my_targets/interlaced_0172.jpg" },
+        { "id": "target-g011", "label": "Genome 011", "genome": [0, 1, 1], "image": "./my_targets/interlaced_0195.jpg" },
+        { "id": "target-g100", "label": "Genome 100", "genome": [1, 0, 0], "image": "./my_targets/fibrous_0193.jpg" },
+        { "id": "target-g101", "label": "Genome 101", "genome": [1, 0, 1], "image": "./my_targets/pitted_0160.jpg" },
+        { "id": "target-g110", "label": "Genome 110", "genome": [1, 1, 0], "image": "./my_targets/striped_0005.jpg" },
+        { "id": "target-g111", "label": "Genome 111", "genome": [1, 1, 1], "image": "./my_targets/striped_0008.jpg" }
+      ],
+      "notes": "Imported from dt3xs_details.json. This target-to-genome mapping assumes the eight targets are ordered by ascending genome bits from 000 to 111."
+    },
+    {
+      "id": "d2-10000",
+      "name": "DT2Genome Comparison 10000",
+      "description": "2-genome-channel comparison model exported from d2-10000.pth",
+      "model_path": "./my_models/d2-10000.json",
+      "state_channels": 14,
+      "genome_channels": 2,
+      "genome_presets": [
+        { "id": "genome-00", "label": "Genome 00", "bits": [0, 0], "color": "#f3c35d" },
+        { "id": "genome-01", "label": "Genome 01", "bits": [0, 1], "color": "#3a9f8f" },
+        { "id": "genome-10", "label": "Genome 10", "bits": [1, 0], "color": "#d96b4d" },
+        { "id": "genome-11", "label": "Genome 11", "bits": [1, 1], "color": "#6a67ce" }
+      ],
+      "targets": [
+        { "id": "genome-00", "label": "Genome 00", "genome": [0, 0], "image": "./my_targets/CMP_knitted.jpg", "default": true },
+        { "id": "genome-01", "label": "Genome 01", "genome": [0, 1], "image": "./my_targets/CMP_knotted.jpg" },
+        { "id": "genome-10", "label": "Genome 10", "genome": [1, 0], "image": "./my_targets/CMP_sprinkled.jpg" },
+        { "id": "genome-11", "label": "Genome 11", "genome": [1, 1], "image": "./my_targets/CMP_wood_floor.jpg" }
+      ],
+      "notes": "Imported from d2_details.json. The four comparison textures are mapped in ascending genome order from 00 to 11."
+    },
+    {
+      "id": "dt2sim-10000",
+      "name": "Large2GenomePEfficientTraining 10000",
+      "description": "2-genome-channel efficient-training model exported from dt2sim-10000.pth",
+      "model_path": "./my_models/dt2sim-10000.json",
+      "state_channels": 14,
+      "genome_channels": 2,
+      "genome_presets": [
+        { "id": "genome-00", "label": "Genome 00", "bits": [0, 0], "color": "#f3c35d" },
+        { "id": "genome-01", "label": "Genome 01", "bits": [0, 1], "color": "#3a9f8f" },
+        { "id": "genome-10", "label": "Genome 10", "bits": [1, 0], "color": "#d96b4d" },
+        { "id": "genome-11", "label": "Genome 11", "bits": [1, 1], "color": "#6a67ce" }
+      ],
+      "targets": [
+        { "id": "genome-00", "label": "Genome 00", "genome": [0, 0], "image": "./my_targets/black-dots.jpg", "default": true },
+        { "id": "genome-01", "label": "Genome 01", "genome": [0, 1], "image": "./my_targets/black-dots-bw.jpg" },
+        { "id": "genome-10", "label": "Genome 10", "genome": [1, 0], "image": "./my_targets/dotted.jpg" },
+        { "id": "genome-11", "label": "Genome 11", "genome": [1, 1], "image": "./my_targets/dotted-bw.jpg" }
+      ],
+      "notes": "Imported from dt2sim.json. The four targets are mapped in ascending genome order from 00 to 11."
+    },
+    {
+      "id": "dummy-genomic-nca",
+      "name": "Dummy Genomic NCA",
+      "description": "Pipeline verification entry with four genome presets and placeholder targets.",
+      "model_path": "./my_models/dummy-genomic-nca.json",
+      "state_channels": 6,
+      "genome_channels": 2,
+      "genome_presets": [
+        { "id": "g00", "label": "Genome 00", "bits": [0, 0], "color": "#f3c35d" },
+        { "id": "g01", "label": "Genome 01", "bits": [0, 1], "color": "#3a9f8f" },
+        { "id": "g10", "label": "Genome 10", "bits": [1, 0], "color": "#d96b4d" },
+        { "id": "g11", "label": "Genome 11", "bits": [1, 1], "color": "#6a67ce" }
+      ],
+      "targets": [
+        { "id": "target-g00", "label": "Target 00", "genome": [0, 0], "image": "./my_targets/dummy-g00.svg", "default": true },
+        { "id": "target-g01", "label": "Target 01", "genome": [0, 1], "image": "./my_targets/dummy-g01.svg" },
+        { "id": "target-g10", "label": "Target 10", "genome": [1, 0], "image": "./my_targets/dummy-g10.svg" },
+        { "id": "target-g11", "label": "Target 11", "genome": [1, 1], "image": "./my_targets/dummy-g11.svg" }
+      ],
+      "notes": "This placeholder model is intentionally minimal. Replace it with an exported PyTorch checkpoint to get real texture dynamics."
+    }
+  ]
+}

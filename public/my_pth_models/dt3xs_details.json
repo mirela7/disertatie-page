@@ -1,0 +1,41 @@
+{
+    "EXPERIMENT_NAME": "DT3GenomeXSArchi",
+    "DESCRIPTION": "Antrenare pentru o arhitectura XS (3360) params si antrenare eficienta",
+    "EPOCHS": 10000,
+    "REGENERATION": true,
+    "NETWORK": {
+        "N_HIDDEN_CHANNELS": 5,
+        "GENOME_CHANNELS": 3,
+        "HIDDEN_LAYER_SIZE": 74,
+        "POOL_SIZE": 1024,
+        "BATCH_SIZE": 8,
+        "PERCEPTION_PICK": "sobel",
+        "PERCEPTION_KERNELS": 4,
+        "LOSS_NN": "VGG16 (weights=imagenet)",
+        "TARGETS": [
+            "my_targets/frilly_0061.jpg",
+            "my_targets/stratified_0102_square.jpg",
+            "my_targets/interlaced_0172.jpg",
+            "my_targets/interlaced_0195.jpg",
+            "my_targets/fibrous_0193.jpg",
+            "my_targets/pitted_0160.jpg",
+            "my_targets/striped_0005.jpg",
+            "my_targets/striped_0008.jpg"
+        ],
+        "LR": {
+            "initial": 0.001,
+            "steps": [
+                1500,
+                4000,
+                8500
+            ],
+            "multiplicative_decay": [
+                0.3,
+                0.3,
+                0.5
+            ]
+        },
+        "MIN_CIRCLE_RADIUS": 12,
+        "MAX_CIRCLE_RADIUS": 28
+    }
+}

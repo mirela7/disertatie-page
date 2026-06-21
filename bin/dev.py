@@ -48,7 +48,7 @@ def parse_byte_range(byte_range):
     return first, last
 
 def write_file(fname, fout, article_html):
-    for s in open(fname) if (fname != "../article.html" or article_html is None) else article_html:
+    for s in open(fname, encoding='utf-8') if (fname != "../article.html" or article_html is None) else article_html:
         if not (isinstance(s, str)):
             s = s.decode('utf-8')
         if "___MODELS___" in s:
@@ -65,7 +65,7 @@ def build():
     try:
         found_remote = False
         remote_url = None
-        for s in open('../.git/config'):
+        for s in open('../.git/config', encoding='utf-8'):
             if s.strip() == '[remote "origin"]':
                 found_remote = True
             if found_remote and s.strip().startswith('url'):
@@ -82,7 +82,7 @@ def build():
         article_html = None
         print("failed to fetch latest article.html. error:");
         print(e)
-    with open('index.html', 'w') as fout:
+    with open('index.html', 'w', encoding='utf-8') as fout:
       write_file('../main.html', fout, article_html)
     print('build finished')
 

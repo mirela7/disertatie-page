@@ -1,0 +1,364 @@
+:root {
+  --page-bg: #f4efe6;
+  --panel-bg: rgba(255, 252, 247, 0.96);
+  --panel-border: rgba(59, 49, 39, 0.14);
+  --text: #2f241c;
+  --muted: #6a5c50;
+  --accent: #c75b39;
+  --accent-strong: #9f3d20;
+  --accent-soft: #efe2d3;
+  --canvas-bg: #ffffff;
+  --shadow: 0 18px 50px rgba(58, 39, 20, 0.12);
+  --radius: 22px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(199, 91, 57, 0.14), transparent 28%),
+    radial-gradient(circle at right 20%, rgba(49, 109, 104, 0.12), transparent 22%),
+    linear-gradient(180deg, #faf5ee 0%, var(--page-bg) 100%);
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.app-shell {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 32px 20px 40px;
+}
+
+.app-header {
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-header h1 {
+  margin: 12px 0 8px;
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+}
+
+.app-header p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.layout {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1.3fr) minmax(360px, 460px);
+  align-items: start;
+}
+
+.center-column {
+  display: grid;
+  gap: 20px;
+}
+
+.stage,
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.stage {
+  padding: 18px;
+}
+
+.step-banner {
+  margin-bottom: 12px;
+  text-align: center;
+  color: var(--accent-strong);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.canvas-wrap {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--canvas-bg);
+  border: 1px solid rgba(59, 49, 39, 0.09);
+}
+
+#gl-canvas,
+#sketch-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+#gl-canvas {
+  background: #0d0d0d;
+  image-rendering: pixelated;
+}
+
+#sketch-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stage-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.status {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+button,
+select,
+input[type="range"] {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 15px;
+  background: #ece2d6;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  background: #e5d6c6;
+}
+
+button.primary {
+  background: var(--accent);
+  color: white;
+}
+
+button.primary:hover {
+  background: var(--accent-strong);
+}
+
+button.active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.panel {
+  padding: 18px;
+  display: grid;
+  gap: 18px;
+}
+
+.section h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.section p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.target-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.model-card,
+.target-card,
+.genome-chip,
+.mode-chip {
+  border: 1px solid rgba(59, 49, 39, 0.12);
+  background: white;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.model-card:hover,
+.target-card:hover,
+.genome-chip:hover,
+.mode-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(199, 91, 57, 0.4);
+}
+
+.model-card.active,
+.target-card.active,
+.genome-chip.active,
+.mode-chip.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(199, 91, 57, 0.15);
+}
+
+.model-card {
+  padding: 12px;
+}
+
+.model-card strong,
+.target-card strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.model-card span,
+.target-card span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.target-card img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 14px 14px 10px 10px;
+  display: block;
+}
+
+.target-card .target-copy {
+  padding: 8px;
+}
+
+.target-card strong {
+  margin-bottom: 2px;
+  font-size: 12px;
+}
+
+.target-card span {
+  font-size: 11px;
+}
+
+.genome-grid,
+.mode-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.genome-grid {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.mode-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.tools-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.genome-chip,
+.mode-chip {
+  padding: 10px 12px;
+}
+
+.genome-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  flex: 0 0 auto;
+}
+
+.control-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.field label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(59, 49, 39, 0.14);
+  background: white;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.toggle input {
+  accent-color: var(--accent);
+}
+
+.note {
+  padding: 12px 14px;
+  background: #fffaf4;
+  border-radius: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1080px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .target-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

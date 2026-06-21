@@ -1,0 +1,33 @@
+{
+  "EXPERIMENT_NAME": "DT2Genome_Comparison",
+  "DESCRIPTION": "Sa antrenez pentru cele 4 texturi preluate din alte articole. Incepe o serie de experimente pentru studiu comparativ. Acesta compara cu studiul GOTEX",
+  "EPOCHS": 10000,
+  "NETWORK": {
+    "N_HIDDEN_CHANNELS": 9,
+    "GENOME_CHANNELS": 2,
+    "POOL_SIZE": 1024,
+    "BATCH_SIZE": 8,
+    "PERCEPTION_PICK": "sobel",
+    "PERCEPTION_KERNELS": 4,
+    "LOSS_NN": "VGG16 (weights=imagenet)",
+    "TARGETS": [
+      "data/CMP_knitted.jpg",
+      "data/CMP_knotted.jpg",
+      "data/CMP_sprinkled.jpg",
+      "data/CMP_wood_floor.jpg"
+    ],
+    "LR": {
+      "initial": 0.001,
+      "steps": [
+        1500,
+        4000,
+        8500
+      ],
+      "multiplicative_decay": [
+        0.3,
+        0.3,
+        0.5
+      ]
+    }
+  }
+}
