@@ -1246,4 +1246,25 @@ export class GenomicCA {
         twgl.setUniforms(this.progs.vis, uniforms);
         twgl.drawBufferInfo(gl, this.quad);
     }
+
+    readVisiblePixels() {
+        const gl = this.gl;
+        const [width, height] = this.gridSize;
+        const framebuffer = twgl.createFramebufferInfo(gl, [{ format: gl.RGBA, type: gl.UNSIGNED_BYTE, min: gl.NEAREST, mag: gl.NEAREST, wrap: gl.CLAMP_TO_EDGE }], width, height);
+        const pixels = new Uint8Array(width * height * 4);
+        const previousViewport = gl.getParameter(gl.VIEWPORT);
+
+        twgl.bindFramebufferInfo(gl, framebuffer);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        this.draw(1.0);
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+        twgl.bindFramebufferInfo(gl, null);
+        gl.viewport(previousViewport[0], previousViewport[1], previousViewport[2], previousViewport[3]);
+        gl.deleteFramebuffer(framebuffer.framebuffer);
+        gl.deleteTexture(framebuffer.attachments[0]);
+
+        return { width, height, pixels };
+    }
 }

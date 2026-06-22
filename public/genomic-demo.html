@@ -58,8 +58,9 @@
             <div class="field">
               <label for="grid-size">Simulation resolution</label>
               <select id="grid-size">
-                <option value="128">128 × 128</option>
-                <option value="256">256 × 256</option>
+                <option value="128">128 x 128</option>
+                <option value="256">256 x 256</option>
+                <option value="512">512 x 512</option>
               </select>
             </div>
             <label class="toggle">
@@ -83,11 +84,37 @@
               <button id="pause-btn">Pause</button>
               <button id="reset-btn">Reset</button>
               <button id="clear-btn">Clear</button>
+              <button id="save-btn">Save Image</button>
+              <button id="metrics-btn">Calculate Metrics</button>
               <button id="random-damage-btn">Random Damage</button>
             </div>
             <div class="status" id="status-text">Loading model registry...</div>
           </div>
         </div>
+
+        <section class="panel metrics-panel">
+          <details class="metrics-disclosure" open>
+            <summary class="metrics-summary">Metrics</summary>
+            <div class="section metrics-content">
+              <div class="metrics-note">Rows are recorded against the active target image and cleared when a new generation starts or the canvas is cleared.</div>
+              <div class="metrics-table-wrap">
+                <table class="metrics-table">
+                  <thead>
+                    <tr>
+                      <th>Snapshot</th>
+                      <th>SSIM (↑)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="metrics-body">
+                    <tr class="metrics-empty">
+                      <td colspan="2">No metrics captured yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </section>
 
         <aside class="panel panel-middle">
           <section class="section">
