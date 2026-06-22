@@ -31,7 +31,6 @@ const state = {
   interpolationAlpha: 0.5,
   interpolationFirst: 0,
   interpolationSecond: 0,
-  metricsRows: [],
 };
 
 const glCanvas = document.getElementById('gl-canvas');
@@ -44,7 +43,6 @@ let sketchGenomeValues = new Float32Array(0);
 let sketchColorValues = new Uint8ClampedArray(0);
 let sketchMask = new Uint8Array(0);
 let isPointerDown = false;
-const targetImageCache = new Map();
 
 const elements = {
   modelList: document.getElementById('model-list'),
@@ -71,8 +69,6 @@ const elements = {
   reset: document.getElementById('reset-btn'),
   clear: document.getElementById('clear-btn'),
   save: document.getElementById('save-btn'),
-  metrics: document.getElementById('metrics-btn'),
-  metricsBody: document.getElementById('metrics-body'),
   randomDamage: document.getElementById('random-damage-btn'),
 };
 
@@ -99,11 +95,6 @@ function updateInterpolationLabel() {
 function activeGenomePreset() {
   const presets = state.activeModelMeta?.genome_presets || [];
   return presets[state.activeGenomeIndex] || presets[0] || null;
-}
-
-function activeTargetMeta() {
-  const targets = state.activeModelMeta?.targets || [];
-  return targets.find(target => target.id === state.activeTargetId) || null;
 }
 
 function createSketchStorage() {
@@ -367,235 +358,6 @@ async function saveTextureImage() {
   setStatus(`Saved ${filename}.`);
 }
 
-function clearMetricsRows() {
-  state.metricsRows = [];
-  renderMetricsTable();
-}
-
-function renderMetricsTable() {
-  elements.metricsBody.innerHTML = '';
-  if (state.metricsRows.length === 0) {
-    elements.metricsBody.innerHTML = `
-      <tr class="metrics-empty">
-        <td colspan="2">No metrics captured yet.</td>
-      </tr>
-    `;
-    return;
-  }
-
-  state.metricsRows.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>At T=${row.step}</td>
-      <td>${row.ssim.toFixed(4)}</td>
-    `;
-    elements.metricsBody.appendChild(tr);
-  });
-}
-
-function reflectIndex(index, length) {
-  if (length <= 1) {
-    return 0;
-  }
-  let value = index;
-  while (value < 0 || value >= length) {
-    if (value < 0) {
-      value = -value - 1;
-    } else {
-      value = 2 * length - value - 1;
-    }
-  }
-  return value;
-}
-
-function extractRgbChannel(rgba, channel) {
-  const pixelCount = Math.floor(rgba.length / 4);
-  const values = new Float64Array(pixelCount);
-  for (let i = 0; i < pixelCount; ++i) {
-    values[i] = rgba[i * 4 + channel];
-  }
-  return values;
-}
-
-function boxFilterReflect(src, width, height, winSize) {
-  const radius = Math.floor(winSize / 2);
-  const paddedWidth = width + radius * 2;
-  const paddedHeight = height + radius * 2;
-  const padded = new Float64Array(paddedWidth * paddedHeight);
-
-  for (let y = 0; y < paddedHeight; ++y) {
-    const srcY = reflectIndex(y - radius, height);
-    for (let x = 0; x < paddedWidth; ++x) {
-      const srcX = reflectIndex(x - radius, width);
-      padded[y * paddedWidth + x] = src[srcY * width + srcX];
-    }
-  }
-
-  const integralWidth = paddedWidth + 1;
-  const integral = new Float64Array((paddedHeight + 1) * integralWidth);
-  for (let y = 0; y < paddedHeight; ++y) {
-    let rowSum = 0.0;
-    for (let x = 0; x < paddedWidth; ++x) {
-      rowSum += padded[y * paddedWidth + x];
-      integral[(y + 1) * integralWidth + (x + 1)] = integral[y * integralWidth + (x + 1)] + rowSum;
-    }
-  }
-
-  const area = winSize * winSize;
-  const filtered = new Float64Array(width * height);
-  for (let y = 0; y < height; ++y) {
-    const y0 = y;
-    const y1 = y + winSize;
-    for (let x = 0; x < width; ++x) {
-      const x0 = x;
-      const x1 = x + winSize;
-      const sum =
-        integral[y1 * integralWidth + x1]
-        - integral[y0 * integralWidth + x1]
-        - integral[y1 * integralWidth + x0]
-        + integral[y0 * integralWidth + x0];
-      filtered[y * width + x] = sum / area;
-    }
-  }
-
-  return filtered;
-}
-
-function cropMean(values, width, height, pad) {
-  let sum = 0.0;
-  let count = 0;
-  for (let y = pad; y < height - pad; ++y) {
-    for (let x = pad; x < width - pad; ++x) {
-      sum += values[y * width + x];
-      count += 1;
-    }
-  }
-  return count > 0 ? sum / count : NaN;
-}
-
-function computeSingleChannelSSIM(reference, candidate, width, height) {
-  const winSize = 7;
-  const pad = Math.floor((winSize - 1) / 2);
-  const pixelCount = width * height;
-
-  const refSquared = new Float64Array(pixelCount);
-  const candSquared = new Float64Array(pixelCount);
-  const refCand = new Float64Array(pixelCount);
-  for (let i = 0; i < pixelCount; ++i) {
-    refSquared[i] = reference[i] * reference[i];
-    candSquared[i] = candidate[i] * candidate[i];
-    refCand[i] = reference[i] * candidate[i];
-  }
-
-  const ux = boxFilterReflect(reference, width, height, winSize);
-  const uy = boxFilterReflect(candidate, width, height, winSize);
-  const uxx = boxFilterReflect(refSquared, width, height, winSize);
-  const uyy = boxFilterReflect(candSquared, width, height, winSize);
-  const uxy = boxFilterReflect(refCand, width, height, winSize);
-
-  const np = winSize * winSize;
-  const covNorm = np / (np - 1);
-  const c1 = (0.01 * 255) ** 2;
-  const c2 = (0.03 * 255) ** 2;
-  const ssimMap = new Float64Array(pixelCount);
-
-  for (let i = 0; i < pixelCount; ++i) {
-    const vx = covNorm * (uxx[i] - ux[i] * ux[i]);
-    const vy = covNorm * (uyy[i] - uy[i] * uy[i]);
-    const vxy = covNorm * (uxy[i] - ux[i] * uy[i]);
-    const a1 = 2 * ux[i] * uy[i] + c1;
-    const a2 = 2 * vxy + c2;
-    const b1 = ux[i] * ux[i] + uy[i] * uy[i] + c1;
-    const b2 = vx + vy + c2;
-    ssimMap[i] = (a1 * a2) / (b1 * b2);
-  }
-
-  return cropMean(ssimMap, width, height, pad);
-}
-
-function computeSSIM(referenceRgba, candidateRgba, width, height) {
-  if (referenceRgba.length !== candidateRgba.length || referenceRgba.length === 0) {
-    return NaN;
-  }
-
-  let total = 0.0;
-  let channels = 0;
-  for (let channel = 0; channel < 3; ++channel) {
-    const score = computeSingleChannelSSIM(
-      extractRgbChannel(referenceRgba, channel),
-      extractRgbChannel(candidateRgba, channel),
-      width,
-      height
-    );
-    if (Number.isFinite(score)) {
-      total += score;
-      channels += 1;
-    }
-  }
-
-  return channels > 0 ? total / channels : NaN;
-}
-
-function loadImage(src) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = src;
-  });
-}
-
-async function getTargetImageData() {
-  const target = activeTargetMeta();
-  if (!target?.image) {
-    return null;
-  }
-
-  const cacheKey = `${target.image}|${state.gridSize}`;
-  if (targetImageCache.has(cacheKey)) {
-    return targetImageCache.get(cacheKey);
-  }
-
-  const image = await loadImage(target.image);
-  const canvas = document.createElement('canvas');
-  canvas.width = state.gridSize;
-  canvas.height = state.gridSize;
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  targetImageCache.set(cacheKey, imageData.data);
-  return imageData.data;
-}
-
-async function captureMetrics() {
-  if (!state.activeModelMeta) {
-    setStatus('Load a model before calculating metrics.');
-    return;
-  }
-
-  const targetData = await getTargetImageData();
-  if (!targetData) {
-    setStatus('No target image is available for SSIM.');
-    return;
-  }
-
-  const currentFrame = ca.readVisiblePixels();
-  const currentCanvas = pixelsToDownloadCanvas(currentFrame);
-  const ctx = currentCanvas.getContext('2d');
-  const currentData = ctx.getImageData(0, 0, currentCanvas.width, currentCanvas.height).data;
-  const ssim = computeSSIM(targetData, currentData, currentCanvas.width, currentCanvas.height);
-
-  if (!Number.isFinite(ssim)) {
-    setStatus('SSIM calculation failed.');
-    return;
-  }
-
-  state.metricsRows.push({ step: state.stepCount, ssim });
-  renderMetricsTable();
-  setStatus(`Captured SSIM at T=${state.stepCount}.`);
-}
-
 function renderInterpolationControls() {
   const presets = state.activeModelMeta?.genome_presets || [];
   const controlsDisabled = !state.sketchMode;
@@ -661,7 +423,6 @@ function applyDefaultTargetGenome(targetId) {
   state.interpolationSecond = state.activeGenomeIndex;
   state.sketchMode = false;
   elements.sketchMode.checked = false;
-  clearMetricsRows();
   renderTargetList();
   renderGenomePalette();
   renderInterpolationControls();
@@ -718,9 +479,6 @@ function startSimulation() {
   if (!state.activeModelMeta) {
     return;
   }
-  if (!state.running && (!state.seeded || state.stepCount === 0)) {
-    clearMetricsRows();
-  }
   if (state.sketchMode) {
     ca.seedGenomeMap(sketchMapToGenomeMap());
     setStatus('Simulation running from sketch genome map.');
@@ -737,7 +495,6 @@ function clearAll() {
   state.seeded = false;
   state.stepCount = 0;
   updateStepCounter();
-  clearMetricsRows();
   ca.clearAll();
   clearSketch();
   if (!state.sketchMode) {
@@ -845,11 +602,6 @@ function attachEvents() {
       setStatus('Image export failed.');
     });
   };
-  elements.metrics.onclick = () => {
-    captureMetrics().catch(() => {
-      setStatus('SSIM calculation failed.');
-    });
-  };
   elements.randomDamage.onclick = () => {
     if (!state.activeModelMeta) {
       return;
@@ -907,7 +659,6 @@ async function init() {
   updateStepCounter();
   renderInterpolationControls();
   renderSketchOverlay();
-  renderMetricsTable();
   const response = await fetch('./my_models.json');
   state.registry = await response.json();
   renderModelList();
