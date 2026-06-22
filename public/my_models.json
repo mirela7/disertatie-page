@@ -103,10 +103,10 @@
       "state_channels": 14,
       "genome_channels": 2,
       "genome_presets": [
-        { "id": "genome-00", "label": "Genome 00", "bits": [0, 0], "color": "#f3c35d" },
-        { "id": "genome-01", "label": "Genome 01", "bits": [0, 1], "color": "#3a9f8f" },
-        { "id": "genome-10", "label": "Genome 10", "bits": [1, 0], "color": "#d96b4d" },
-        { "id": "genome-11", "label": "Genome 11", "bits": [1, 1], "color": "#6a67ce" }
+        { "id": "genome-00", "label": "Bubbly", "bits": [0, 0], "color": "#f3c35d" },
+        { "id": "genome-01", "label": "Bubbly-BW", "bits": [0, 1], "color": "#3a9f8f" },
+        { "id": "genome-10", "label": "Dotted", "bits": [1, 0], "color": "#d96b4d" },
+        { "id": "genome-11", "label": "Dotted-BW", "bits": [1, 1], "color": "#6a67ce" }
       ],
       "targets": [
         { "id": "genome-00", "label": "Bubbly", "genome": [0, 0], "image": "./my_targets/black-dots.jpg", "default": true },
