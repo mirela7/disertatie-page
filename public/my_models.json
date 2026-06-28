@@ -2,8 +2,8 @@
   "models": [
     {
       "id": "dt4-10000",
-      "name": "16 Genomes training",
-      "description": "4-genome-channel regeneration model (1000 epochs)",
+      "name": "16 genomes + Regeneration",
+      "description": "12k params",
       "model_path": "./my_models/dt4-10000.json",
       "state_channels": 20,
       "genome_channels": 4,
@@ -46,9 +46,67 @@
       "notes": "Imported from dt4_details.json. The 16 targets are mapped in ascending genome order from 0000 to 1111."
     },
     {
+      "id": "sobel-small-10000",
+      "name": "8 genomes (M-size)",
+      "description": "No regeneration; 5k param",
+      "model_path": "./my_models/sobel-small-10000.json",
+      "state_channels": 15,
+      "genome_channels": 3,
+      "genome_presets": [
+        { "id": "frilly", "label": "Frilly", "bits": [0, 0, 0], "color": "#f3c35d" },
+        { "id": "stratified", "label": "Stratified", "bits": [0, 0, 1], "color": "#3a9f8f" },
+        { "id": "interlaced_1", "label": "Interlaced_1", "bits": [0, 1, 0], "color": "#d96b4d" },
+        { "id": "interlaced_2", "label": "Interlaced_2", "bits": [0, 1, 1], "color": "#6a67ce" },
+        { "id": "fibrous", "label": "Fibrous", "bits": [1, 0, 0], "color": "#4d8be0" },
+        { "id": "pitted", "label": "Pitted", "bits": [1, 0, 1], "color": "#9a5de0" },
+        { "id": "striped_1", "label": "Striped_1", "bits": [1, 1, 0], "color": "#57b65f" },
+        { "id": "striped_2", "label": "Striped_2", "bits": [1, 1, 1], "color": "#303030" }
+      ],
+      "targets": [
+        { "id": "frilly", "label": "Frilly", "genome": [0, 0, 0], "image": "./my_targets/frilly_0061.jpg", "default": true },
+        { "id": "stratified", "label": "Stratified", "genome": [0, 0, 1], "image": "./my_targets/stratified_0102_square.jpg" },
+        { "id": "interlaced_1", "label": "Interlaced_1", "genome": [0, 1, 0], "image": "./my_targets/interlaced_0172.jpg" },
+        { "id": "interlaced_2", "label": "Interlaced_2", "genome": [0, 1, 1], "image": "./my_targets/interlaced_0195.jpg" },
+        { "id": "fibrous", "label": "Fibrous", "genome": [1, 0, 0], "image": "./my_targets/fibrous_0193.jpg" },
+        { "id": "pitted", "label": "Pitted", "genome": [1, 0, 1], "image": "./my_targets/pitted_0160.jpg" },
+        { "id": "striped_1", "label": "Striped_1", "genome": [1, 1, 0], "image": "./my_targets/striped_0005.jpg" },
+        { "id": "striped_2", "label": "Striped_2", "genome": [1, 1, 1], "image": "./my_targets/striped_0008.jpg" }
+      ],
+      "notes": "Imported from config_details.json. This small sobel model uses the same eight targets as the other 8-genome experiment, mapped in ascending genome order from 000 to 111."
+    },
+    {
+      "id": "dt3lr-10000",
+      "name": "8 genomes (M-size) + Regeneration",
+      "description": "With regenerationl 8k param",
+      "model_path": "./my_models/dt3lr-10000.json",
+      "state_channels": 15,
+      "genome_channels": 3,
+      "genome_presets": [
+        { "id": "frilly", "label": "Frilly", "bits": [0, 0, 0], "color": "#f3c35d" },
+        { "id": "stratified", "label": "Stratified", "bits": [0, 0, 1], "color": "#3a9f8f" },
+        { "id": "interlaced_1", "label": "Interlaced_1", "bits": [0, 1, 0], "color": "#d96b4d" },
+        { "id": "interlaced_2", "label": "Interlaced_2", "bits": [0, 1, 1], "color": "#6a67ce" },
+        { "id": "fibrous", "label": "Fibrous", "bits": [1, 0, 0], "color": "#4d8be0" },
+        { "id": "pitted", "label": "Pitted", "bits": [1, 0, 1], "color": "#9a5de0" },
+        { "id": "striped_1", "label": "Striped_1", "bits": [1, 1, 0], "color": "#57b65f" },
+        { "id": "striped_2", "label": "Striped_2", "bits": [1, 1, 1], "color": "#303030" }
+      ],
+      "targets": [
+        { "id": "frilly", "label": "Frilly", "genome": [0, 0, 0], "image": "./my_targets/frilly_0061.jpg", "default": true },
+        { "id": "stratified", "label": "Stratified", "genome": [0, 0, 1], "image": "./my_targets/stratified_0102_square.jpg" },
+        { "id": "interlaced_1", "label": "Interlaced_1", "genome": [0, 1, 0], "image": "./my_targets/interlaced_0172.jpg" },
+        { "id": "interlaced_2", "label": "Interlaced_2", "genome": [0, 1, 1], "image": "./my_targets/interlaced_0195.jpg" },
+        { "id": "fibrous", "label": "Fibrous", "genome": [1, 0, 0], "image": "./my_targets/fibrous_0193.jpg" },
+        { "id": "pitted", "label": "Pitted", "genome": [1, 0, 1], "image": "./my_targets/pitted_0160.jpg" },
+        { "id": "striped_1", "label": "Striped_1", "genome": [1, 1, 0], "image": "./my_targets/striped_0005.jpg" },
+        { "id": "striped_2", "label": "Striped_2", "genome": [1, 1, 1], "image": "./my_targets/striped_0008.jpg" }
+      ],
+      "notes": "Imported from config_details.json. This regeneration-trained 8-genome model uses the same eight targets and label mapping as the other 8-genome trainings, in ascending genome order from 000 to 111."
+    },
+    {
       "id": "dt3xs-10000",
-      "name": "8 Genomes Training",
-      "description": "XS genomic texture NCA",
+      "name": "8 genomes (XS-size) + Regeneration",
+      "description": "3611 params",
       "model_path": "./my_models/dt3xs-10000.json",
       "state_channels": 11,
       "genome_channels": 3,
@@ -76,8 +134,8 @@
     },
     {
       "id": "d2-10000",
-      "name": "4 genomes sructured",
-      "description": "2-genome-channel structured textures",
+      "name": "4 genomes: structured",
+      "description": "8k param",
       "model_path": "./my_models/d2-10000.json",
       "state_channels": 14,
       "genome_channels": 2,
@@ -96,9 +154,30 @@
       "notes": "Imported from d2_details.json. The four comparison textures are mapped in ascending genome order from 00 to 11."
     },
     {
+      "id": "sobel-regen-10000",
+      "name": "4 genomes: structured + regeneration",
+      "description": "No regeneration; 8k param",
+      "model_path": "./my_models/sobel-regen-10000.json",
+      "state_channels": 14,
+      "genome_channels": 2,
+      "genome_presets": [
+        { "id": "knitted", "label": "Knitted", "bits": [0, 0], "color": "#f3c35d" },
+        { "id": "knotted", "label": "Knotted", "bits": [0, 1], "color": "#3a9f8f" },
+        { "id": "sprinkled", "label": "Sprinkled", "bits": [1, 0], "color": "#d96b4d" },
+        { "id": "tiled", "label": "Tiled", "bits": [1, 1], "color": "#6a67ce" }
+      ],
+      "targets": [
+        { "id": "knitted", "label": "Knitted", "genome": [0, 0], "image": "./my_targets/CMP_knitted.jpg", "default": true },
+        { "id": "knotted", "label": "Knotted", "genome": [0, 1], "image": "./my_targets/CMP_knotted.jpg" },
+        { "id": "sprinkled", "label": "Sprinkled", "genome": [1, 0], "image": "./my_targets/CMP_sprinkled.jpg" },
+        { "id": "tiled", "label": "Tiled", "genome": [1, 1], "image": "./my_targets/CMP_wood_floor.jpg" }
+      ],
+      "notes": "Imported from sobel-regen.json. The four structured textures are mapped in ascending genome order from 00 to 11."
+    },
+    {
       "id": "dt2sim-10000",
-      "name": "4-genome similar textures",
-      "description": "2-genome-channel similar textures",
+      "name": "4 genomes: similar",
+      "description": "8k param",
       "model_path": "./my_models/dt2sim-10000.json",
       "state_channels": 14,
       "genome_channels": 2,
